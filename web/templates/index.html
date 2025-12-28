@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalshi Sports Trading Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #08090c;
+            --bg-secondary: #0e1015;
+            --bg-tertiary: #14171e;
+            --bg-card: #111419;
+            --border: #1e222a;
+            --border-hover: #2a2f3a;
+            --text-primary: #f0f1f3;
+            --text-secondary: #7a7d85;
+            --text-muted: #4a4d55;
+            --accent-green: #00d97e;
+            --accent-green-dim: rgba(0, 217, 126, 0.15);
+            --accent-red: #ff4757;
+            --accent-red-dim: rgba(255, 71, 87, 0.15);
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.15);
+            --accent-yellow: #fbbf24;
+            --accent-purple: #8b5cf6;
+            --gradient-green: linear-gradient(135deg, #00d97e 0%, #00b368 100%);
+            --gradient-blue: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            width: 72px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        .logo {
+            width: 40px; height: 40px;
+            background: var(--gradient-green);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .nav-item {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent-blue-dim);
+            color: var(--accent-blue);
+        }
+
+        .nav-item svg { width: 22px; height: 22px; }
+
+        .main-content {
+            margin-left: 72px;
+            padding: 24px 32px;
+            max-width: 1600px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header-actions { display: flex; gap: 12px; }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--gradient-green);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before { opacity: 1; }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive { color: var(--accent-green); }
+        .stat-change.negative { color: var(--accent-red); }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title { font-size: 16px; font-weight: 600; }
+        .card-body { padding: 24px; }
+        .chart-container { height: 300px; position: relative; }
+
+        .activity-feed { max-height: 400px; overflow-y: auto; }
+
+        .activity-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .activity-item:last-child { border-bottom: none; }
+
+        .activity-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.buy { background: var(--accent-green-dim); color: var(--accent-green); }
+        .activity-icon.sell { background: var(--accent-red-dim); color: var(--accent-red); }
+
+        .activity-content { flex: 1; min-width: 0; }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .activity-meta { font-size: 12px; color: var(--text-secondary); }
+
+        .activity-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .activity-amount.positive { color: var(--accent-green); }
+        .activity-amount.negative { color: var(--accent-red); }
+
+        .positions-table { width: 100%; border-collapse: collapse; }
+
+        .positions-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .positions-table td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .positions-table tbody tr:hover { background: var(--bg-tertiary); }
+
+        .position-ticker {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--accent-blue);
+        }
+
+        .position-side {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .position-side.yes { background: var(--accent-green-dim); color: var(--accent-green); }
+        .position-side.no { background: var(--accent-red-dim); color: var(--accent-red); }
+
+        .decision-item {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .decision-event { font-weight: 500; }
+
+        .decision-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .decision-badge.place-bet { background: var(--accent-green-dim); color: var(--accent-green); }
+        .decision-badge.skip { background: var(--bg-card); color: var(--text-secondary); }
+
+        .decision-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .decision-detail-item { display: flex; flex-direction: column; gap: 4px; }
+
+        .decision-detail-label {
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .decision-detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .sports-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .sport-tab {
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .sport-tab:hover { color: var(--text-primary); }
+        .sport-tab.active { background: var(--bg-card); color: var(--text-primary); }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 24px; height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-dot.online {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .status-dot.offline { background: var(--accent-red); }
+
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content { padding: 16px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 60px; }
+            .main-content { margin-left: 60px; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="logo">K</div>
+        <a href="/" class="nav-item active" title="Dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+        </a>
+        <a href="/portfolio" class="nav-item" title="Portfolio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h7"/>
+                <circle cx="18" cy="18" r="3"/>
+                <path d="M18 14v1"/>
+            </svg>
+        </a>
+        <a href="/analysis" class="nav-item" title="Analysis">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+            </svg>
+        </a>
+        <a href="/decisions" class="nav-item" title="AI Decisions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+        </a>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1>Trading Dashboard</h1>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+                    <span class="status-dot online"></span>
+                    Live • Last updated: <span id="last-update">--</span>
+                </p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="refreshData()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/>
+                        <path d="M20.49 15a9 9 0 01-14.85 3.36L1 14"/>
+                    </svg>
+                    Refresh
+                </button>
+                <button class="btn btn-primary" onclick="openScanner()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Scan Markets
+                </button>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Portfolio Value</div>
+                <div class="stat-value" id="portfolio-value">$0.00</div>
+                <div class="stat-change positive" id="portfolio-change">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 15l-6-6-6 6"/>
+                    </svg>
+                    +0.00%
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Available Balance</div>
+                <div class="stat-value" id="available-balance">$0.00</div>
+                <div class="stat-change" style="color: var(--text-secondary)">Ready to trade</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Positions</div>
+                <div class="stat-value" id="active-positions">0</div>
+                <div class="stat-change" style="color: var(--text-secondary)">
+                    Across <span id="markets-count">0</span> markets
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">AI Decisions Today</div>
+                <div class="stat-value" id="decisions-today">0</div>
+                <div class="stat-change" style="color: var(--accent-blue)">
+                    <span id="recommendations-count">0</span> recommended bets
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Portfolio Performance</span>
+                    <div class="sports-tabs" style="margin: 0;">
+                        <span class="sport-tab active" data-period="1d">1D</span>
+                        <span class="sport-tab" data-period="1w">1W</span>
+                        <span class="sport-tab" data-period="1m">1M</span>
+                        <span class="sport-tab" data-period="all">All</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Live Activity</span>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">View All</button>
+                </div>
+                <div class="card-body" style="padding: 12px 24px;">
+                    <div class="activity-feed" id="activity-feed">
+                        <div class="loading"><div class="spinner"></div>Loading activity...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 24px;">
+            <div class="card-header">
+                <span class="card-title">Open Positions</span>
+                <span style="color: var(--text-secondary); font-size: 13px;">
+                    <span id="positions-count">0</span> active positions
+                </span>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <table class="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Market</th><th>Side</th><th>Quantity</th>
+                            <th>Avg Price</th><th>Current</th><th>P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-tbody">
+                        <tr><td colspan="6" class="loading"><div class="spinner"></div>Loading positions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 24px;">
+            <div class="card-header">
+                <span class="card-title">Recent AI Decisions</span>
+                <a href="/decisions" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; text-decoration: none;">
+                    View All Logs
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="decisions-container">
+                    <div class="loading"><div class="spinner"></div>Loading decisions...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let portfolioData = null;
+        let positionsData = [];
+        let tradesData = [];
+        let decisionsData = [];
+        let performanceChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            refreshData();
+            setInterval(refreshData, 30000);
+        });
+
+        function initChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#16181f',
+                            titleColor: '#f0f1f3',
+                            bodyColor: '#7a7d85',
+                            borderColor: '#1e222a',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: { label: (context) => `$${context.parsed.y.toFixed(2)}` }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(30, 34, 42, 0.5)', drawBorder: false },
+                            ticks: { color: '#7a7d85', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(30, 34, 42, 0.5)', drawBorder: false },
+                            ticks: { color: '#7a7d85', font: { size: 11 }, callback: (value) => `$${value}` }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+            updateChartData();
+        }
+
+        function updateChartData() {
+            const now = new Date();
+            const labels = [];
+            const data = [];
+            let value = portfolioData?.portfolio_value_usd || 1000;
+            
+            for (let i = 23; i >= 0; i--) {
+                const time = new Date(now - i * 3600000);
+                labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+                value += (Math.random() - 0.48) * 20;
+                data.push(Math.max(0, value));
+            }
+            
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets[0].data = data;
+            performanceChart.update();
+        }
+
+        async function refreshData() {
+            await Promise.all([fetchPortfolio(), fetchPositions(), fetchTrades(), fetchDecisions()]);
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        }
+
+        async function fetchPortfolio() {
+            try {
+                const response = await fetch('/api/portfolio');
+                const result = await response.json();
+                if (result.success) {
+                    portfolioData = result.data;
+                    updatePortfolioDisplay();
+                }
+            } catch (error) { console.error('Failed to fetch portfolio:', error); }
+        }
+
+        function updatePortfolioDisplay() {
+            if (!portfolioData) return;
+            document.getElementById('portfolio-value').textContent = `$${(portfolioData.portfolio_value_usd || 0).toFixed(2)}`;
+            document.getElementById('available-balance').textContent = `$${(portfolioData.balance_usd || 0).toFixed(2)}`;
+            updateChartData();
+        }
+
+        async function fetchPositions() {
+            try {
+                const response = await fetch('/api/positions');
+                const result = await response.json();
+                if (result.success) {
+                    positionsData = result.data || [];
+                    updatePositionsDisplay();
+                }
+            } catch (error) { console.error('Failed to fetch positions:', error); }
+        }
+
+        function updatePositionsDisplay() {
+            const tbody = document.getElementById('positions-tbody');
+            document.getElementById('active-positions').textContent = positionsData.length;
+            document.getElementById('positions-count').textContent = positionsData.length;
+            document.getElementById('markets-count').textContent = positionsData.length;
+            
+            if (positionsData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px;">No open positions</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = positionsData.map(pos => {
+                const pnl = (pos.market_exposure || 0) / 100;
+                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+                return `<tr>
+                    <td><span class="position-ticker">${pos.ticker || 'N/A'}</span></td>
+                    <td><span class="position-side ${pos.position === 'yes' ? 'yes' : 'no'}">${(pos.position || 'yes').toUpperCase()}</span></td>
+                    <td style="font-family: 'JetBrains Mono', monospace;">${pos.total_traded || 0}</td>
+                    <td style="font-family: 'JetBrains Mono', monospace;">${((pos.average_price || 0) / 100).toFixed(2)}¢</td>
+                    <td style="font-family: 'JetBrains Mono', monospace;">--</td>
+                    <td class="${pnlClass}" style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function fetchTrades() {
+            try {
+                const response = await fetch('/api/trades');
+                const result = await response.json();
+                if (result.success) {
+                    tradesData = result.data || [];
+                    updateActivityFeed();
+                }
+            } catch (error) { console.error('Failed to fetch trades:', error); }
+        }
+
+        function updateActivityFeed() {
+            const feed = document.getElementById('activity-feed');
+            if (tradesData.length === 0) {
+                feed.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 40px;">No recent activity</div>`;
+                return;
+            }
+            
+            feed.innerHTML = tradesData.slice(0, 10).map(trade => {
+                const isBuy = trade.action === 'buy';
+                const amount = (trade.count || 0) * ((trade.price || 0) / 100);
+                return `<div class="activity-item">
+                    <div class="activity-icon ${isBuy ? 'buy' : 'sell'}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            ${isBuy ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M5 12l7 7 7-7"/>'}
+                        </svg>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">${trade.ticker || 'Unknown'}</div>
+                        <div class="activity-meta">${isBuy ? 'Bought' : 'Sold'} ${trade.count || 0} @ ${trade.price || 0}¢ • ${new Date(trade.created_time).toLocaleTimeString()}</div>
+                    </div>
+                    <div class="activity-amount ${isBuy ? 'negative' : 'positive'}">${isBuy ? '-' : '+'}$${amount.toFixed(2)}</div>
+                </div>`;
+            }).join('');
+        }
+
+        async function fetchDecisions() {
+            try {
+                const response = await fetch('/api/decisions');
+                const result = await response.json();
+                if (result.success) {
+                    decisionsData = result.decisions || [];
+                    updateDecisionsDisplay();
+                }
+            } catch (error) { console.error('Failed to fetch decisions:', error); }
+        }
+
+        function updateDecisionsDisplay() {
+            const container = document.getElementById('decisions-container');
+            const recommended = decisionsData.filter(d => d.decision?.decision === 'place_bet').length;
+            
+            document.getElementById('decisions-today').textContent = decisionsData.length;
+            document.getElementById('recommendations-count').textContent = recommended;
+            
+            if (decisionsData.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 40px;">No AI decisions yet. Run a market scan to generate analysis.</div>`;
+                return;
+            }
+            
+            container.innerHTML = decisionsData.slice(-5).reverse().map(item => {
+                const d = item.decision || {};
+                const isRecommended = d.decision === 'place_bet';
+                return `<div class="decision-item">
+                    <div class="decision-header">
+                        <span class="decision-event">${d.event_name || 'Unknown Event'}</span>
+                        <span class="decision-badge ${isRecommended ? 'place-bet' : 'skip'}">${isRecommended ? '✓ Recommended' : 'Skip'}</span>
+                    </div>
+                    <div class="decision-details">
+                        <div class="decision-detail-item">
+                            <span class="decision-detail-label">Confidence</span>
+                            <span class="decision-detail-value">${((d.confidence || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="decision-detail-item">
+                            <span class="decision-detail-label">Expected Value</span>
+                            <span class="decision-detail-value" style="color: ${d.expected_value >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${d.expected_value >= 0 ? '+' : ''}${((d.expected_value || 0) * 100).toFixed(2)}%</span>
+                        </div>
+                        <div class="decision-detail-item">
+                            <span class="decision-detail-label">Bet Type</span>
+                            <span class="decision-detail-value">${d.bet_type || '--'} ${d.bet_side || ''}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openScanner() {
+            alert('Market scanner coming soon! This will scan active sports for betting opportunities.');
+        }
+
+        document.querySelectorAll('.sport-tab[data-period]').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.sport-tab[data-period]').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                updateChartData();
+            });
+        });
+    </script>
+</body>
+</html>

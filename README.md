@@ -1,35 +1,37 @@
-# Kalshi Arbitrage Trading Bot
+# Kalshi Sports Betting Bot
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Code Style](https://img.shields.io/badge/Code%20Style-PEP%208-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-orange.svg)](https://flask.palletsprojects.com/)
 
-> **An intelligent trading system designed to identify and capitalize on arbitrage opportunities in Kalshi prediction markets.**
+> **An AI-powered intelligent trading system for Kalshi prediction markets, integrating sports odds, AI research, and multi-model decision making.**
 
-The Kalshi Arbitrage Trading Bot is a professional-grade Python application that continuously monitors market conditions and identifies two distinct types of profitable trading opportunities. With an intuitive interactive menu system and comprehensive automation capabilities, the bot makes sophisticated market analysis accessible to traders of all experience levels.
-
-**Repository**: [kalshi-arbitrage-bot](https://github.com/vladmeer/kalshi-arbitrage-bot)
+This system combines multiple data sources and AI models to identify and analyze betting opportunities in Kalshi prediction markets, with a focus on sports events.
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### 🎯 **Dual Opportunity Detection**
-- **Probability Arbitrage**: Identifies markets where YES and NO contract probabilities don't sum to 100%, creating risk-free profit opportunities
-- **Spread Trading**: Finds orderbook inefficiencies where bid prices exceed ask prices, enabling instant profit through simultaneous buy and sell execution
+### 🎯 **Multi-Source Data Integration**
+- **Kalshi API**: Real-time access to prediction market prices, orderbooks, and portfolio management
+- **The Odds API**: Live sports betting lines from 50+ bookmakers (DraftKings, FanDuel, BetMGM, etc.)
+- **Cross-Market Analysis**: Compare sportsbook odds with Kalshi prediction market prices
 
-### 💼 **Professional Features**
-- **Interactive Menu System**: User-friendly interface with arrow key navigation (no command-line arguments needed!)
-- **Intelligent Fee Calculation**: Accurate cost analysis ensuring realistic profit projections
-- **Automated Execution**: Optional automatic trade execution with comprehensive safety controls
-- **Continuous Monitoring**: Long-term market surveillance with customizable scan intervals
-- **Risk Management**: Built-in position sizing, liquidity filtering, and profit thresholds
+### 🤖 **AI-Powered Analysis**
+- **Perplexity AI Research**: Automated team research, injury reports, and betting trends analysis
+- **OpenRouter Multi-Model**: Access to 400+ AI models (GPT-4, Claude, Gemini, Llama) for decision synthesis
+- **Intelligent Decision Engine**: Combines all data sources to generate actionable recommendations
 
-### 🛡️ **Production-Ready**
-- **Robust Error Handling**: Graceful handling of API failures, rate limits, and network issues
-- **Rate Limiting**: Intelligent API rate limit management with automatic backoff
-- **Type Safety**: Comprehensive type hints for better IDE support and maintainability
-- **Modular Architecture**: Clean, well-organized codebase following best practices
+### 📊 **Real-Time Dashboard**
+- **Portfolio Tracking**: Live balance, positions, and P&L monitoring
+- **Activity Feed**: Real-time trade history and execution status
+- **AI Decision Log**: Complete audit trail of all AI-generated recommendations
+- **Performance Charts**: Visual portfolio performance over time
+
+### 🛡️ **Risk Management**
+- **Configurable Thresholds**: Set minimum confidence, edge, and position sizes
+- **Automated Filtering**: Only surfaces opportunities meeting your criteria
+- **Full Transparency**: Complete reasoning chain for every recommendation
 
 ---
 
@@ -37,238 +39,166 @@ The Kalshi Arbitrage Trading Bot is a professional-grade Python application that
 
 ### Prerequisites
 
-- **Python 3.8+** installed on your system
-- **Kalshi API credentials** (API Key ID and Private Key)
-- **pip** (Python package manager)
+- **Python 3.9+** installed
+- API keys from:
+  - [Kalshi](https://kalshi.com/account/api-keys) (trading)
+  - [The Odds API](https://the-odds-api.com/) (sports data)
+  - [Perplexity AI](https://www.perplexity.ai/settings/api) (research)
+  - [OpenRouter](https://openrouter.ai/keys) (AI models)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/vladmeer/kalshi-arbitrage-bot.git
-   cd kalshi-arbitrage-bot
+   git clone https://github.com/yourusername/kalshi-sports-bot.git
+   cd kalshi-sports-bot
    ```
 
-2. **Install dependencies**
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configure your API credentials**
-   
-   Create a `.env` file in the project root:
+4. **Configure API keys**
    ```bash
-   # Create .env file
-   # Windows: copy .env.example .env
-   # Linux/Mac: cp .env.example .env
+   cp .env.example .env
+   # Edit .env with your API credentials
    ```
-   
-   Then edit `.env` with your Kalshi API credentials:
-   ```env
-   KALSHI_API_KEY=your_api_key_id_here
-   KALSHI_API_SECRET=your_private_key_here
-   KALSHI_API_BASE_URL=https://api.elections.kalshi.com/trade-api/v2
-   MIN_PROFIT_PER_DAY=0.1
-   MAX_POSITION_SIZE=1000
-   MIN_PROFIT_CENTS=2
-   ```
-   
-   > **💡 Tip**: Find your API credentials in your Kalshi account settings:
-   > - **API Key ID** → use for `KALSHI_API_KEY`
-   > - **Private Key** → use for `KALSHI_API_SECRET`
 
-4. **Run the bot**
+5. **Run the bot**
    ```bash
    python main.py
    ```
 
 ---
 
-## 📖 Usage Guide
+## 📖 Usage
 
-### Interactive Menu (Recommended)
+### Interactive Menu
 
-Simply run `python main.py` without any arguments to launch the interactive menu:
+Run without arguments for the interactive menu:
 
-```
-======================================================================
-  KALSHI ARBITRAGE TRADING BOT - Interactive Menu
-======================================================================
-
-Select an option (Use ↑↓ arrows, Enter to select):
-→ 📊 Single Scan (All Opportunities)
-  📈 Scan Spread Trading Opportunities Only
-  🎯 Scan Probability Arbitrage Opportunities Only
-  🔄 Continuous Monitoring Mode
-  ⚙️  Configure Settings
-  ❌ Exit
+```bash
+python main.py
 ```
 
-### Menu Options Explained
+```
+╔═══════════════════════════════════════════════════════════════╗
+║           KALSHI SPORTS BETTING BOT                           ║
+║       AI-Powered Prediction Market Trading                    ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Features:                                                    ║
+║  • Sports Odds Integration (The Odds API)                     ║
+║  • AI Research (Perplexity)                                   ║
+║  • Multi-Model Decisions (OpenRouter)                         ║
+║  • Real-Time Dashboard                                        ║
+╚═══════════════════════════════════════════════════════════════╝
 
-#### 📊 **Single Scan (All Opportunities)**
-Performs a comprehensive one-time scan of markets, identifying both probability arbitrage and spread trading opportunities. Perfect for quick market analysis.
+   MAIN MENU
+==================================================
+   1. 🖥️  Launch Web Dashboard
+   2. 🔍 Scan Sport for Opportunities
+   3. 🔬 Research a Matchup
+   4. 💼 View Portfolio
+   5. 📊 Check API Status
+   6. ❌ Exit
+==================================================
+```
 
-**Configuration prompts:**
-- Number of markets to scan (default: 100)
-- Display all opportunities or just top 10
-- Enable automatic trade execution (⚠️ use with caution)
+### Command Line Interface
 
-#### 📈 **Scan Spread Trading Opportunities Only**
-Focuses exclusively on immediate spread trading opportunities where you can buy low and sell high instantly.
+```bash
+# Launch web dashboard
+python main.py dashboard
 
-**Configuration prompts:**
-- Number of markets to scan
-- Display preferences
-- Auto-execution option
+# Scan a sport for opportunities
+python main.py scan americanfootball_nfl --max 10
 
-#### 🎯 **Scan Probability Arbitrage Opportunities Only**
-Analyzes markets specifically for probability arbitrage where contract probabilities deviate from expected values.
+# Research a specific matchup
+python main.py research "Chiefs vs Bills"
 
-**Configuration prompts:**
-- Number of markets to scan
-- Display preferences
+# View portfolio status
+python main.py portfolio
 
-#### 🔄 **Continuous Monitoring Mode**
-Runs the bot in continuous mode, periodically scanning markets for new opportunities. Ideal for long-term monitoring and automated trading strategies.
+# Check API configuration
+python main.py status
+```
 
-**Configuration prompts:**
-- Scan interval in seconds (default: 300 = 5 minutes)
-- Number of markets per scan iteration
-- Auto-execution option
-- Maximum number of scans (or unlimited)
+### Supported Sports
 
-#### ⚙️ **Configure Settings**
-Adjust bot configuration parameters such as minimum liquidity requirements.
-
----
-
-## 🧠 How It Works
-
-### 1. Probability Arbitrage Detection
-
-Probability arbitrage occurs when the combined YES and NO contract probabilities don't equal 100%, indicating a market inefficiency.
-
-**Example Scenario:**
-- YES contracts trading at **52¢**
-- NO contracts trading at **50¢**
-- **Total: 102%** → 2% arbitrage opportunity
-
-**How it works:**
-1. Fetches active markets from Kalshi API
-2. Calculates total probability (YES price + NO price)
-3. Identifies markets where total ≠ 100%
-4. Calculates gross profit and net profit (after fees)
-5. Ranks opportunities by profit per day based on expiration date
-
-### 2. Spread Trading Detection
-
-Spread trading opportunities arise when orderbook bid prices exceed ask prices, enabling simultaneous buy and sell execution for instant profit.
-
-**Example Scenario:**
-- Best bid: **43¢** (highest price buyers are willing to pay)
-- Best ask: **42¢** (lowest price sellers are willing to accept)
-- **Profit: 1¢ per contract** (minus trading fees)
-
-**How it works:**
-1. Scans orderbooks for profitable spreads
-2. Identifies cases where bid > ask
-3. Calculates net profit after fees
-4. Optionally executes trades automatically
-
-### Comparison & Recommendations
-
-The bot intelligently compares both opportunity types and provides recommendations:
-- **Spread Trading**: Instant profit, no waiting required
-- **Probability Arbitrage**: Time-based profit, requires holding until expiration
+| Sport | Key |
+|-------|-----|
+| NFL | `americanfootball_nfl` |
+| College Football | `americanfootball_ncaaf` |
+| NBA | `basketball_nba` |
+| College Basketball | `basketball_ncaab` |
+| MLB | `baseball_mlb` |
+| NHL | `icehockey_nhl` |
+| MLS | `soccer_usa_mls` |
+| UFC/MMA | `mma_mixed_martial_arts` |
 
 ---
 
 ## 🏗️ Architecture
 
-The codebase follows a clean, modular architecture with clear separation of concerns:
+```
+kalshi-sports-bot/
+├── main.py                    # CLI entry point
+├── requirements.txt           # Python dependencies
+├── .env.example              # Environment template
+├── README.md                 # Documentation
+│
+├── src/                      # Core modules
+│   ├── __init__.py
+│   ├── kalshi_client.py      # Kalshi API client
+│   ├── sports_odds_client.py # The Odds API client
+│   ├── perplexity_client.py  # Perplexity AI client
+│   ├── openrouter_client.py  # OpenRouter AI client
+│   └── decision_engine.py    # AI decision orchestration
+│
+├── web/                      # Web dashboard
+│   ├── app.py               # Flask application
+│   ├── templates/
+│   │   └── index.html       # Dashboard UI
+│   └── static/              # CSS/JS assets
+│
+└── logs/                     # Application logs
+```
 
-### Core Modules
-
-- **`main.py`** - Main orchestration layer with interactive menu system
-- **`src/market_api.py`** - Professional API client with rate limiting and error handling
-- **`src/opportunity_analyzer.py`** - Advanced market analysis for probability arbitrage detection
-- **`src/execution_engine.py`** - Orderbook analysis and trade execution system
-- **`src/cost_calculator.py`** - Comprehensive fee calculation engine
-
-### Design Principles
-
-- **Modular Design**: Each module has a single, well-defined responsibility
-- **Error Resilience**: Comprehensive error handling with graceful degradation
-- **Type Safety**: Full type hints throughout for better IDE support
-- **Configuration Management**: Environment-based configuration with sensible defaults
-- **Production Ready**: Safe defaults, comprehensive logging, and thorough testing
-
----
-
-## 💰 Fee Structure
-
-The bot uses an accurate approximation of Kalshi's tiered fee structure:
-
-| Contract Price Range | Fee Rate |
-|---------------------|----------|
-| Near 50¢ (40-60¢) | ~3.5% (highest) |
-| Medium (30-40¢, 60-70¢) | ~3.0% |
-| Low-Medium (20-30¢, 70-80¢) | ~2.5% |
-| Low (10-20¢, 80-90¢) | ~2.0% |
-| Extremes (0-10¢, 90-100¢) | ~1.0% (lowest) |
-
-**Additional Considerations:**
-- **Maker orders** (limit orders): 50% fee discount
-- **Taker orders** (market orders): Full fee rate
-
-> **Note**: Actual fees may vary. Check Kalshi's official fee schedule for precise values.
-
----
-
-## 📊 Example Output
+### Data Flow
 
 ```
-======================================================================
-SPREAD TRADING OPPORTUNITIES: Found 3 profitable opportunities!
-======================================================================
-
-[1] ============================================================
-Market: Will Bitcoin reach $50,000 by end of month?
-Ticker: BTC-50K-JAN
-Side: YES
-Buy Price: 42¢
-Sell Price: 43¢
-Spread: 1¢
-Quantity: 100 contracts
-
-Profit Analysis:
-  Gross Profit: $1.00
-  Net Profit (after fees): $0.85
-  Profit per Contract: $0.0085
-============================================================
-
-======================================================================
-PROBABILITY ARBITRAGE OPPORTUNITIES: Found 2 profitable opportunities!
-======================================================================
-
-[1] ============================================================
-Market: Will Bitcoin reach $50,000 by end of month?
-Ticker: BTC-50K-JAN
-Total Probability: 102.5%
-Deviation from 100%: 2.50%
-Expiration: 2024-01-31 23:59:59
-Days to Expiration: 16.50
-
-Profit Analysis:
-  Gross Profit: $25.00
-  Net Profit (after fees): $22.50
-  Profit per Day: $1.36
-
-Recommended Trades:
-  1. SELL 100 contracts of BTC-50K-JAN-YES at 52¢ (side: yes)
-  2. SELL 100 contracts of BTC-50K-JAN-NO at 50¢ (side: no)
-============================================================
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  The Odds API   │     │  Perplexity AI  │     │    OpenRouter   │
+│  (Sports Data)  │     │   (Research)    │     │  (AI Decisions) │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │    Decision Engine      │
+                    │  • Analyze Odds Value   │
+                    │  • Research Context     │
+                    │  • Generate Decisions   │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │      Kalshi API         │
+                    │  • Execute Trades       │
+                    │  • Manage Portfolio     │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │    Web Dashboard        │
+                    │  • Monitor Positions    │
+                    │  • Track Decisions      │
+                    └─────────────────────────┘
 ```
 
 ---
@@ -277,92 +207,205 @@ Recommended Trades:
 
 ### Environment Variables
 
-You can customize the bot's behavior by editing your `.env` file:
-
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `KALSHI_API_KEY` | Your Kalshi API Key ID | Required |
-| `KALSHI_API_SECRET` | Your Kalshi Private Key | Required |
-| `KALSHI_API_BASE_URL` | Kalshi API endpoint | `https://api.elections.kalshi.com/trade-api/v2` |
-| `MIN_PROFIT_PER_DAY` | Minimum profit per day for arbitrage | `0.1` ($0.10) |
-| `MAX_POSITION_SIZE` | Maximum contracts per trade | `1000` |
-| `MIN_PROFIT_CENTS` | Minimum profit in cents per contract | `2` |
-| `MIN_LIQUIDITY` | Minimum liquidity in cents | `10000` ($100) |
+| `KALSHI_API_KEY` | Kalshi API key ID | Required |
+| `KALSHI_API_SECRET` | Kalshi private key (PEM) | Required |
+| `ODDS_API_KEY` | The Odds API key | Required |
+| `PERPLEXITY_API_KEY` | Perplexity AI API key | Required |
+| `OPENROUTER_API_KEY` | OpenRouter API key | Required |
+| `MIN_CONFIDENCE` | Minimum AI confidence (0-1) | `0.6` |
+| `MIN_EDGE` | Minimum expected edge | `0.03` |
+| `MAX_BET_PCT` | Max bet as % of bankroll | `0.02` |
+| `PORT` | Web dashboard port | `5000` |
+| `DEBUG` | Enable debug mode | `false` |
 
-### Smart Defaults
+### Decision Thresholds
 
-The bot automatically calculates minimum profitable opportunities based on actual trading fees. Any opportunity with positive net profit (after fees) will be considered, ensuring you don't miss profitable opportunities even if they're very small.
+The AI decision engine uses configurable thresholds:
 
----
-
-## ⚠️ Important Notes & Warnings
-
-### Safety First
-
-- **⚠️ Auto-Execute Warning**: Enabling auto-execute in the interactive menu will automatically place trades using real money. Use with extreme caution and test thoroughly first. Always monitor your account and positions.
-
-- **API Access**: You need valid Kalshi API credentials to use this bot. Ensure your credentials are correctly configured in the `.env` file.
-
-- **Market Hours**: Kalshi operates nearly 24/7 with occasional maintenance windows.
-
-- **Risk Management**: 
-  - Arbitrage opportunities may be fleeting and require quick execution
-  - Ensure markets have sufficient liquidity before executing trades
-  - Test thoroughly with small positions before scaling up
-
-- **Order Execution**: Limit orders are used by default for safety. Market orders may execute at worse prices but provide instant execution.
-
-### Best Practices
-
-1. **Start Small**: Begin by scanning a small number of markets (10-50) with low liquidity thresholds to test
-2. **Dry Run First**: Use the interactive menu and disable auto-execute to see opportunities first
-3. **Monitor Closely**: Watch output and verify behavior matches expectations
-4. **Understand Risks**: Trading involves risk - only trade what you can afford to lose
+- **MIN_CONFIDENCE (0.6)**: Only recommend bets where AI confidence ≥ 60%
+- **MIN_EDGE (0.03)**: Only recommend bets with ≥ 3% expected value edge
+- **MAX_BET_PCT (0.02)**: Limit each bet to 2% of portfolio
 
 ---
 
-## 🧪 Testing & Validation
+## 🔌 API Clients
 
-Before using with real money:
+### Kalshi Client
 
-1. **Dry Run**: Use the interactive menu and select options without enabling auto-execute to see opportunities
-   ```bash
-   python main.py
-   ```
+```python
+from src.kalshi_client import KalshiClient
 
-2. **Small Test**: Start with limited markets (10-50) and low liquidity thresholds using the interactive menu
+client = KalshiClient()
 
-3. **Monitor Output**: Watch the output and verify behavior matches expectations
+# Get portfolio
+balance = client.get_balance()
+positions = client.get_positions()
 
-4. **Gradual Scaling**: Gradually increase limits and liquidity as you gain confidence
+# Get market data
+markets = client.get_markets(limit=100, status="open")
+orderbook = client.get_market_orderbook("TICKER-123")
+
+# Place order
+order = client.create_order(
+    ticker="TICKER-123",
+    side="yes",
+    action="buy",
+    count=10,
+    type="limit",
+    yes_price=45
+)
+```
+
+### Sports Odds Client
+
+```python
+from src.sports_odds_client import SportsOddsClient
+
+client = SportsOddsClient()
+
+# Get available sports
+sports = client.get_sports()
+
+# Get odds for NFL
+odds = client.get_odds(
+    sport="americanfootball_nfl",
+    markets=["h2h", "spreads", "totals"],
+    bookmakers=["draftkings", "fanduel"]
+)
+
+# Find best odds across bookmakers
+best = client.find_best_odds(odds, "h2h")
+```
+
+### Perplexity Client
+
+```python
+from src.perplexity_client import PerplexityClient
+
+client = PerplexityClient()
+
+# Research a team
+research = client.research_team("Kansas City Chiefs", "NFL")
+
+# Get injury report
+injuries = client.get_injury_report("Kansas City Chiefs", "NFL")
+
+# Analyze matchup
+analysis = client.research_matchup(
+    team1="Chiefs",
+    team2="Bills",
+    sport="NFL"
+)
+```
+
+### OpenRouter Client
+
+```python
+from src.openrouter_client import OpenRouterClient
+
+client = OpenRouterClient()
+
+# Get betting decision
+decision = client.generate_bet_decision(
+    event_info={"teams": ["Chiefs", "Bills"], "date": "2024-01-21"},
+    odds_data={"home": -150, "away": +130},
+    research_summary="Chiefs are 10-2 at home...",
+    kalshi_prices={"yes": 65, "no": 35}
+)
+```
+
+### Decision Engine
+
+```python
+from src.decision_engine import AIDecisionEngine
+
+engine = AIDecisionEngine()
+
+# Scan a sport
+decisions = engine.scan_sport("americanfootball_nfl", max_events=5)
+
+# Get recommendations only
+recommendations = engine.get_recommendations(decisions)
+
+# Analyze single event
+decision = engine.analyze_event(event_data, include_research=True)
+```
 
 ---
 
-## 📝 Disclaimer
+## 📊 Web Dashboard
 
-**This bot is for educational and informational purposes only.**
+The web dashboard provides real-time monitoring at `http://localhost:5000`:
 
-Trading involves risk, and past performance does not guarantee future results. Always:
-- Understand the risks involved
-- Test thoroughly before using real money
+### Features
+
+- **Portfolio Overview**: Balance, positions, P&L
+- **Live Activity Feed**: Recent trades and executions
+- **AI Decision Log**: All recommendations with reasoning
+- **Performance Charts**: Portfolio value over time
+- **Market Scanner**: Trigger scans for specific sports
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/portfolio` | GET | Get portfolio summary |
+| `/api/positions` | GET | Get open positions |
+| `/api/trades` | GET | Get recent trades |
+| `/api/decisions` | GET | Get AI decisions |
+| `/api/analyze` | POST | Analyze an event |
+| `/api/scan/{sport}` | GET | Scan sport for opportunities |
+| `/api/health` | GET | Health check |
+
+---
+
+## ⚠️ Disclaimers
+
+### Risk Warning
+
+**Trading involves significant risk of loss.** This software is for educational and informational purposes only. Always:
+
+- Understand the risks before trading
+- Never trade with money you can't afford to lose
+- Test thoroughly with small amounts first
 - Monitor your positions regularly
-- Comply with Kalshi's terms of service
-- Consult with financial advisors if needed
+- Comply with all applicable laws and terms of service
 
-The authors and contributors are not responsible for any financial losses incurred through the use of this software.
+### Not Financial Advice
+
+This bot provides AI-generated analysis and recommendations. These are **not financial advice**. The developers are not responsible for any trading losses.
+
+### API Usage
+
+- Respect rate limits on all APIs
+- Keep your API keys secure
+- Monitor your API usage and costs
+- The Odds API has usage-based pricing
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ---
 
-## 👤 Author
+## 📝 License
 
-**vladmeer**
-
-Built with Python 3.8+, demonstrating production-ready software engineering practices.
-
-### Contact
-
-- **Telegram**: [@vladmeer67](https://t.me/vladmeer67)
-- **X (Twitter)**: [@vladmeer67](https://x.com/vladmeer67)
-- **GitHub**: [@vladmeer](https://github.com/vladmeer)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
+
+## 🙏 Acknowledgments
+
+- [Kalshi](https://kalshi.com) - Prediction market platform
+- [The Odds API](https://the-odds-api.com) - Sports betting data
+- [Perplexity AI](https://perplexity.ai) - AI research
+- [OpenRouter](https://openrouter.ai) - Multi-model AI access
