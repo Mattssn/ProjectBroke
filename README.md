@@ -22,11 +22,15 @@ This system combines multiple data sources and AI models to identify and analyze
 - **OpenRouter Multi-Model**: Access to 400+ AI models (GPT-4, Claude, Gemini, Llama) for decision synthesis
 - **Intelligent Decision Engine**: Combines all data sources to generate actionable recommendations
 
-### 📊 **Real-Time Dashboard**
+### 📊 **Real-Time Dashboard with Full Bot Control**
 - **Portfolio Tracking**: Live balance, positions, and P&L monitoring
 - **Activity Feed**: Real-time trade history and execution status
 - **AI Decision Log**: Complete audit trail of all AI-generated recommendations
 - **Performance Charts**: Visual portfolio performance over time
+- **Bot Control Panel**: Start/stop bot, toggle auto-trading, monitor scan status
+- **Settings Management**: Adjust all parameters from the web UI
+- **Manual Trading**: Place and cancel orders directly from the dashboard
+- **On-Demand Scanning**: Trigger immediate market scans for any sport
 
 ### 🛡️ **Risk Management**
 - **Configurable Thresholds**: Set minimum confidence, edge, and position sizes
@@ -163,10 +167,14 @@ kalshi-sports-bot/
 │   └── decision_engine.py    # AI decision orchestration
 │
 ├── web/                      # Web dashboard
-│   ├── app.py               # Flask application
+│   ├── app.py               # Flask application + bot control APIs
 │   ├── templates/
 │   │   └── index.html       # Dashboard UI
-│   └── static/              # CSS/JS assets
+│   └── static/
+│       ├── css/
+│       │   └── dashboard.css # Dashboard styles
+│       └── js/
+│           └── dashboard.js  # Dashboard JavaScript
 │
 └── logs/                     # Application logs
 ```
@@ -337,27 +345,107 @@ decision = engine.analyze_event(event_data, include_research=True)
 
 ## 📊 Web Dashboard
 
-The web dashboard provides real-time monitoring at `http://localhost:5000`:
+The web dashboard provides real-time monitoring and full bot control at `http://localhost:5000`:
 
-### Features
+### Dashboard Overview
 
 - **Portfolio Overview**: Balance, positions, P&L
 - **Live Activity Feed**: Recent trades and executions
 - **AI Decision Log**: All recommendations with reasoning
 - **Performance Charts**: Portfolio value over time
-- **Market Scanner**: Trigger scans for specific sports
+
+### 🎮 Bot Control Panel
+
+The dashboard header includes a full bot control panel:
+
+| Control | Description |
+|---------|-------------|
+| **Start/Stop Bot** | Toggle the background market scanner on/off |
+| **Auto Trade Toggle** | Enable/disable automatic trade execution |
+| **Status Indicator** | Shows current bot state and active sport being scanned |
+| **Live Stats** | Events analyzed, recommendations, trades today, daily P&L |
+
+### ⚙️ Settings Page
+
+Click the gear icon to access all configurable parameters:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Min Confidence | AI confidence threshold (0-1) | 0.6 |
+| Min Edge % | Minimum expected value | 3% |
+| Max Bet Size % | Bet size as % of bankroll | 2% |
+| Max Position Size | Cap on contracts per position | 1000 |
+| Max Daily Trades | Daily trade limit (safety) | 10 |
+| Max Daily Loss | Stop-loss for the day | $100 |
+| Scan Interval | How often bot scans (seconds) | 300 |
+| AI Model | Claude, GPT-4o, GPT-4o-mini | Claude 3.5 |
+| Enabled Sports | Toggle which sports to scan | NFL, NBA |
+| Use Research | Enable Perplexity AI research | On |
+| Auto Execute | Allow bot to place trades automatically | Off |
+
+### 💰 Manual Trading Page
+
+Click the dollar icon to access manual trading:
+
+- **Place Orders**: Enter ticker, side (YES/NO), action (BUY/SELL), quantity, price
+- **Order Types**: Limit or Market orders
+- **Open Orders**: View all resting limit orders
+- **Cancel Orders**: Cancel any open order with one click
+
+### 🔍 Scan Now Modal
+
+Click "Scan Now" to trigger an immediate market scan:
+
+- Select sport to scan
+- Configure max events to analyze
+- Toggle whether to include AI research
+- View results immediately in the decisions feed
 
 ### API Endpoints
 
+#### Portfolio & Data
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/portfolio` | GET | Get portfolio summary |
 | `/api/positions` | GET | Get open positions |
 | `/api/trades` | GET | Get recent trades |
 | `/api/decisions` | GET | Get AI decisions |
-| `/api/analyze` | POST | Analyze an event |
-| `/api/scan/{sport}` | GET | Scan sport for opportunities |
+| `/api/decision-logs` | GET | Get detailed decision logs |
+
+#### Bot Control
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/bot/status` | GET | Get bot state, config, and stats |
+| `/api/bot/start` | POST | Start the bot scanner |
+| `/api/bot/stop` | POST | Stop the bot scanner |
+| `/api/bot/config` | GET | Get current configuration |
+| `/api/bot/config` | POST | Update configuration |
+| `/api/bot/auto-trade` | POST | Toggle auto-trade mode |
+| `/api/bot/scan-now` | POST | Trigger immediate scan |
+
+#### Trading
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/trade/place` | POST | Place a new order |
+| `/api/trade/cancel/{id}` | DELETE | Cancel an open order |
+| `/api/orders` | GET | Get open orders |
+
+#### Market Data
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/odds/{sport}` | GET | Get odds for a sport |
+| `/api/sports` | GET | Get available sports |
+| `/api/kalshi/markets` | GET | Get Kalshi markets |
+| `/api/kalshi/market/{ticker}` | GET | Get market details |
+| `/api/analyze` | POST | Analyze specific event |
+| `/api/research` | POST | Research a matchup |
+
+#### System
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/api/health` | GET | Health check |
+| `/api/errors` | GET | Get recent bot errors |
+| `/api/stats` | GET | Get trading statistics |
 
 ---
 
