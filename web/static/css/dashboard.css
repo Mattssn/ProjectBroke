@@ -519,6 +519,58 @@ body {
     to { transform: translateX(0); opacity: 1; }
 }
 
+/* ==================== AI Analysis Section Styles ==================== */
+
+.filter-btn.active {
+    background: var(--accent-blue-dim) !important;
+    border-color: var(--accent-blue) !important;
+    color: var(--accent-blue) !important;
+}
+
+.scan-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    transition: opacity 0.3s;
+}
+
+.scan-step-icon {
+    font-size: 20px;
+    width: 32px;
+    text-align: center;
+}
+
+.scan-step-text {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+/* AI Analysis Card hover */
+.card[style*="cursor:pointer"]:hover .card-header,
+.card-header[style*="cursor:pointer"]:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Insights list styling */
+.insights-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.insights-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.insights-list li:last-child {
+    border-bottom: none;
+}
+
+/* ==================== Responsive Styles ==================== */
+
 @media (max-width: 1200px) {
     .control-grid { grid-template-columns: repeat(2, 1fr); }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -531,7 +583,10 @@ body {
     .sidebar { width: 60px; }
     .control-grid { grid-template-columns: 1fr; }
     .stats-grid { grid-template-columns: 1fr; }
+    .decision-details { grid-template-columns: 1fr; }
 }
+
+/* ==================== Scrollbar Styles ==================== */
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }

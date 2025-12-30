@@ -1,0 +1,16 @@
+# Secrets - NEVER commit these
+.env
+*.pem
+kalshi-private-key.pem
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Debug/temp files
+*.json
+debug*.py
+dump.py
+test*.py
+*.bak

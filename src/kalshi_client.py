@@ -7,23 +7,27 @@ Comprehensive client for Kalshi prediction markets with support for:
 - Order management (create, cancel, amend orders)
 - Real-time WebSocket connections
 
-Authentication uses RSA key signing as per Kalshi API v2 specification.
+Authentication uses RSA-PSS key signing as per Kalshi API v2 specification.
 """
 import os
 import time
 import base64
-import hashlib
 import requests
 from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, ec
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.backends import default_backend
+from cryptography.exceptions import InvalidSignature
 
 
 class KalshiClient:
     """
     Professional Kalshi API client with full portfolio and market support.
+    
+    Authentication follows Kalshi's RSA-PSS signature scheme:
+    - Signs: timestamp + method + path (without query params)
+    - Uses PSS padding with SHA256 and DIGEST_LENGTH salt
     """
     
     def __init__(self, api_key: str = None, api_secret: str = None, base_url: str = None):
@@ -42,6 +46,7 @@ class KalshiClient:
         
         # Load private key if provided
         self.private_key = None
+        self._key_load_error = None
         if self.api_secret:
             self._load_private_key()
     
@@ -52,39 +57,58 @@ class KalshiClient:
             
             # Check if it's a file path
             if os.path.isfile(self.api_secret):
-                with open(self.api_secret, 'r') as f:
+                with open(self.api_secret, 'rb') as f:
                     key_data = f.read()
-            
-            # Try loading as PEM
-            if "-----BEGIN" in key_data:
+                    # Load directly as bytes
+                    self.private_key = serialization.load_pem_private_key(
+                        key_data,
+                        password=None,
+                        backend=default_backend()
+                    )
+                print(f"Successfully loaded private key from: {self.api_secret}")
+            elif "-----BEGIN" in self.api_secret:
+                # It's a PEM string, not a file path
                 self.private_key = serialization.load_pem_private_key(
-                    key_data.encode(),
+                    self.api_secret.encode('utf-8'),
                     password=None,
                     backend=default_backend()
                 )
+                print("Successfully loaded private key from PEM string")
+            else:
+                self._key_load_error = f"Private key not found at path: {self.api_secret}"
+                print(f"Warning: {self._key_load_error}")
+                
         except Exception as e:
+            self._key_load_error = str(e)
             print(f"Warning: Could not load private key: {e}")
             self.private_key = None
     
-    def _sign_request(self, method: str, path: str, timestamp: str) -> str:
-        """Sign a request using the private key."""
+    def _sign_pss_text(self, text: str) -> str:
+        """
+        Sign text using RSA-PSS as required by Kalshi API.
+        
+        Uses:
+        - PSS padding
+        - MGF1 with SHA256
+        - Salt length = DIGEST_LENGTH (32 bytes for SHA256)
+        """
         if not self.private_key:
             return ""
         
         try:
-            message = f"{timestamp}{method}{path}"
-            
-            # Sign based on key type
-            if hasattr(self.private_key, 'sign'):
-                signature = self.private_key.sign(
-                    message.encode(),
-                    padding.PKCS1v15(),
-                    hashes.SHA256()
-                )
-            else:
-                signature = b""
-            
-            return base64.b64encode(signature).decode()
+            message = text.encode('utf-8')
+            signature = self.private_key.sign(
+                message,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return base64.b64encode(signature).decode('utf-8')
+        except InvalidSignature as e:
+            print(f"RSA sign PSS failed: {e}")
+            return ""
         except Exception as e:
             print(f"Warning: Could not sign request: {e}")
             return ""
@@ -112,14 +136,29 @@ class KalshiClient:
         }
         
         # Add authentication headers
-        if authenticated and self.api_key:
-            timestamp = str(int(time.time() * 1000))
+        if authenticated and self.api_key and self.private_key:
+            # Timestamp in milliseconds
+            timestamp_ms = int(time.time() * 1000)
+            timestamp_str = str(timestamp_ms)
+            
+            # Build path for signing (include /trade-api/v2 prefix)
             path = f"/trade-api/v2/{endpoint.lstrip('/')}"
-            signature = self._sign_request(method.upper(), path, timestamp)
+            
+            # Strip query parameters from path before signing
+            path_without_query = path.split('?')[0]
+            
+            # Build message: timestamp + method + path
+            msg_string = f"{timestamp_str}{method.upper()}{path_without_query}"
+            signature = self._sign_pss_text(msg_string)
             
             headers["KALSHI-ACCESS-KEY"] = self.api_key
-            headers["KALSHI-ACCESS-TIMESTAMP"] = timestamp
+            headers["KALSHI-ACCESS-TIMESTAMP"] = timestamp_str
             headers["KALSHI-ACCESS-SIGNATURE"] = signature
+        elif authenticated and (not self.api_key or not self.private_key):
+            if self._key_load_error:
+                print(f"Authentication skipped: {self._key_load_error}")
+            else:
+                print("Authentication skipped: Missing API key or private key")
         
         try:
             self.last_request_time = time.time()
@@ -145,6 +184,12 @@ class KalshiClient:
             
         except requests.exceptions.RequestException as e:
             print(f"API request failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    print(f"Error details: {error_detail}")
+                except:
+                    print(f"Response text: {e.response.text[:500]}")
             return None
     
     # ==================== Portfolio Endpoints ====================

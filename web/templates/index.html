@@ -17,6 +17,12 @@
                 <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
             </svg>
         </a>
+        <a href="#" class="nav-item" data-section="ai-analysis" title="AI Analysis">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+            </svg>
+        </a>
         <a href="#" class="nav-item" data-section="settings" title="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -30,9 +36,7 @@
             </svg>
         </a>
     </nav>
-
     <div class="toast-container" id="toast-container"></div>
-
     <main class="main-content">
         <header class="header">
             <div>
@@ -47,7 +51,6 @@
                 <button class="btn btn-primary" onclick="openScanModal()">🔍 Scan Now</button>
             </div>
         </header>
-
         <!-- Bot Control Panel -->
         <div class="bot-control-panel">
             <div class="bot-control-header">
@@ -86,7 +89,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -106,7 +108,6 @@
                 <div class="stat-value" id="decisions-today">0</div>
             </div>
         </div>
-
         <!-- Dashboard Section -->
         <div id="dashboard-section">
             <div class="dashboard-grid">
@@ -130,12 +131,40 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-header"><span class="card-title">Recent AI Decisions</span></div>
+                    <div class="card-header">
+                        <span class="card-title">Recent AI Decisions</span>
+                        <button class="btn btn-secondary" style="padding:6px 12px;font-size:11px;" onclick="showSection('ai-analysis');document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.querySelector('[data-section=ai-analysis]').classList.add('active');">View All →</button>
+                    </div>
                     <div class="card-body" id="decisions-container"><div class="loading"><div class="spinner"></div>Loading...</div></div>
                 </div>
             </div>
         </div>
-
+        <!-- AI Analysis Section (NEW) -->
+        <div id="ai-analysis-section" style="display:none;">
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <span class="card-title">🤖 AI Analysis Center</span>
+                    <button class="btn btn-primary" onclick="openScanModal()">Run New Scan</button>
+                </div>
+                <div class="card-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        View detailed AI reasoning, research summaries, and odds analysis for each event scanned.
+                    </p>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <button class="btn btn-secondary filter-btn active" onclick="filterAnalyses('all', this)" style="padding:8px 16px;">All</button>
+                        <button class="btn btn-secondary filter-btn" onclick="filterAnalyses('place_bet', this)" style="padding:8px 16px;">Recommended</button>
+                        <button class="btn btn-secondary filter-btn" onclick="filterAnalyses('skip', this)" style="padding:8px 16px;">Skipped</button>
+                    </div>
+                </div>
+            </div>
+            <div id="ai-analyses-container">
+                <div style="text-align:center;padding:60px 20px;color:var(--text-secondary);">
+                    <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+                    <div>No AI analyses yet</div>
+                    <div style="font-size:13px;margin-top:8px;">Run a scan to see detailed AI breakdowns</div>
+                </div>
+            </div>
+        </div>
         <!-- Settings Section -->
         <div id="settings-section" style="display:none;">
             <div class="card">
@@ -174,11 +203,11 @@
                             <input type="number" class="setting-input" id="setting-scan-interval" min="60" max="3600" value="300">
                         </div>
                         <div class="setting-item">
-                            <label class="setting-label">AI Model</label>
+                            <label class="setting-label">AI Model (Full Mode)</label>
                             <select class="setting-input" id="setting-model">
-                                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                                <option value="openai/gpt-4o">GPT-4o</option>
-                                <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet ($$$)</option>
+                                <option value="openai/gpt-4o">GPT-4o ($$)</option>
+                                <option value="openai/gpt-4o-mini">GPT-4o Mini ($)</option>
                             </select>
                         </div>
                     </div>
@@ -196,10 +225,101 @@
                             <div class="toggle" id="setting-auto-execute" onclick="this.classList.toggle('active')"></div>
                         </div>
                     </div>
+                    
+                    <!-- Budget Mode Section -->
+                    <div style="margin-top:24px;padding:16px;background:var(--accent-green-dim);border:1px solid var(--accent-green);border-radius:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <div>
+                                <h4 style="color:var(--accent-green);margin-bottom:4px;">💰 Budget Mode</h4>
+                                <p style="font-size:12px;color:var(--text-secondary);">Use FREE data sources + cheap AI. ~98% cost reduction!</p>
+                            </div>
+                            <div class="toggle active" id="setting-budget-mode" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-secondary);">
+                            <div style="display:flex;gap:24px;">
+                                <div>
+                                    <strong>Budget Mode (ON):</strong><br>
+                                    • ESPN API (free) for injuries, standings, news<br>
+                                    • GPT-4o-mini (~$0.01/scan)<br>
+                                    • ~$0.01 per 5 events
+                                </div>
+                                <div>
+                                    <strong>Full Mode (OFF):</strong><br>
+                                    • Perplexity AI research (~$0.38/scan)<br>
+                                    • Claude Sonnet (~$0.16/scan)<br>
+                                    • ~$0.54 per 5 events
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Debug Settings Card -->
+            <div class="card" style="margin-top:24px;">
+                <div class="card-header">
+                    <span class="card-title">🐛 Debug Settings</span>
+                    <button class="btn btn-secondary" onclick="applyDebugSettings()">Apply</button>
+                </div>
+                <div class="card-body">
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">
+                        Control server-side logging verbosity. Changes take effect immediately.
+                    </p>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label class="setting-label">Log Level</label>
+                            <select class="setting-input" id="debug-log-level">
+                                <option value="ERROR">ERROR - Errors only</option>
+                                <option value="WARNING">WARNING - Warnings & errors</option>
+                                <option value="INFO" selected>INFO - General info</option>
+                                <option value="DEBUG">DEBUG - Verbose (all details)</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label class="setting-label">Component Filter</label>
+                            <select class="setting-input" id="debug-component">
+                                <option value="all">All Components</option>
+                                <option value="decision_engine">Decision Engine</option>
+                                <option value="kalshi">Kalshi API</option>
+                                <option value="odds">Odds API</option>
+                                <option value="perplexity">Perplexity Research</option>
+                                <option value="openrouter">OpenRouter AI</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-grid" style="margin-top:16px;">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Log API Requests</span>
+                            <div class="toggle" id="debug-log-api" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Log API Responses</span>
+                            <div class="toggle" id="debug-log-responses" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Log Decision Details</span>
+                            <div class="toggle active" id="debug-log-decisions" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Log Research Steps</span>
+                            <div class="toggle" id="debug-log-research" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;padding:12px;background:var(--bg-tertiary);border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <span style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Live Server Logs</span>
+                            <div>
+                                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-right:8px;" onclick="clearDebugLogs()">Clear</button>
+                                <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="fetchDebugLogs()">Refresh</button>
+                            </div>
+                        </div>
+                        <div id="debug-log-output" style="height:200px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-primary);border-radius:4px;padding:8px;">
+                            <div style="color:var(--text-muted);">Click "Refresh" to load recent logs...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
         <!-- Trade Section -->
         <div id="trade-section" style="display:none;">
             <div class="card">
@@ -251,7 +371,6 @@
             </div>
         </div>
     </main>
-
     <!-- Scan Modal -->
     <div class="modal-overlay" id="scan-modal">
         <div class="modal">
@@ -286,7 +405,6 @@
             </div>
         </div>
     </div>
-
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

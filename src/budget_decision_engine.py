@@ -1,20 +1,28 @@
 """
-AI Decision Engine (Simplified - No Perplexity)
+Budget Decision Engine
 
-Uses:
-- The Odds API (free tier: 500 req/month) for betting lines
-- ESPN API (free) for team data when available  
-- OpenRouter (GPT-4o-mini) for decisions (~$0.01 per scan)
+Uses FREE data sources + cheap AI model for ~98% cost reduction:
+- ESPN API (free) for standings, injuries, news, recent games
+- GPT-4o-mini (~$0.15/1M input, $0.60/1M output) instead of Claude Sonnet
+- Summarized odds (not full dump)
+- Concise prompts
 
-NO Perplexity required!
+Cost comparison:
+- Original: ~$0.54 per scan (5 events)
+- Budget:   ~$0.01 per scan (5 events)
 """
 import os
 import json
 import time
 import logging
 from datetime import datetime, timezone
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional, Any, Callable
 from dataclasses import dataclass
+
+from .free_sports_data import FreeSportsDataClient
+from .sports_odds_client import SportsOddsClient
+from .openrouter_client import OpenRouterClient
+from .kalshi_client import KalshiClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -83,18 +91,15 @@ class BetDecision:
         }
 
 
-class AIDecisionEngine:
+class BudgetDecisionEngine:
     """
-    Simplified decision engine - NO Perplexity!
+    Budget-friendly decision engine using free data sources.
     
-    Data sources:
-    - The Odds API (free tier) for betting lines
-    - ESPN API (free) for team stats/injuries
-    - OpenRouter (GPT-4o-mini) for AI decisions
+    Cost: ~$0.002 per event vs ~$0.11 per event (original)
     """
     
-    # Cheap but effective model
-    DEFAULT_MODEL = "openai/gpt-4o-mini"
+    # Use the cheapest effective model
+    DEFAULT_MODEL = "openai/gpt-4o-mini"  # ~50x cheaper than Claude Sonnet
     
     SPORT_MAPPING = {
         "americanfootball_nfl": "NFL",
@@ -106,41 +111,25 @@ class AIDecisionEngine:
     }
     
     def __init__(self, model: str = None):
-        # Import here to avoid circular imports
-        from .sports_odds_client import SportsOddsClient
-        from .openrouter_client import OpenRouterClient
-        from .free_sports_data import FreeSportsDataClient
-        
-        self.odds_client = SportsOddsClient()
-        self.ai_client = OpenRouterClient()
         self.free_data = FreeSportsDataClient()
+        self.odds = SportsOddsClient()
+        self.ai = OpenRouterClient()
+        self.kalshi = KalshiClient()
         
-        self.model = model or os.getenv("AI_MODEL", self.DEFAULT_MODEL)
+        self.model = model or self.DEFAULT_MODEL
         self.min_confidence = float(os.getenv("MIN_CONFIDENCE", "0.6"))
         
         self._on_decision_callback: Optional[Callable] = None
         self.decision_logs = []
-        
-        logger.info(f"[ENGINE] Initialized with model: {self.model}")
-        logger.info(f"[ENGINE] NO Perplexity - using free data sources only")
     
     def set_decision_callback(self, callback: Callable):
-        """Set callback for real-time decision updates."""
         self._on_decision_callback = callback
     
-    # ==================== Odds Processing ====================
-    
-    def get_odds_for_sport(self, sport_key: str) -> List[Dict]:
-        """Get odds from The Odds API."""
-        return self.odds_client.get_odds(
-            sport=sport_key,
-            regions="us",
-            markets="h2h,spreads,totals",
-            odds_format="american"
-        )
-    
     def summarize_odds(self, event_odds: Dict) -> Dict:
-        """Create concise odds summary."""
+        """
+        Create a CONCISE odds summary instead of dumping everything.
+        Reduces tokens by ~80%.
+        """
         home_team = event_odds.get("home_team", "")
         away_team = event_odds.get("away_team", "")
         
@@ -153,6 +142,8 @@ class AIDecisionEngine:
         }
         
         for bookmaker in event_odds.get("bookmakers", []):
+            book_name = bookmaker.get("key", "")
+            
             for market in bookmaker.get("markets", []):
                 market_key = market.get("key")
                 
@@ -166,18 +157,20 @@ class AIDecisionEngine:
                             summary["moneyline"]["home"].append(price)
                         elif name == away_team:
                             summary["moneyline"]["away"].append(price)
+                    
                     elif market_key == "spreads":
                         if name == home_team:
                             summary["spread"]["home"].append({"line": point, "odds": price})
                         elif name == away_team:
                             summary["spread"]["away"].append({"line": point, "odds": price})
+                    
                     elif market_key == "totals":
                         if name == "Over":
                             summary["total"]["over"].append({"line": point, "odds": price})
                         elif name == "Under":
                             summary["total"]["under"].append({"line": point, "odds": price})
         
-        # Calculate consensus
+        # Calculate consensus/best odds
         def avg(lst): return sum(lst) / len(lst) if lst else 0
         def best(lst): return max(lst) if lst else 0
         
@@ -185,8 +178,8 @@ class AIDecisionEngine:
             "home_team": home_team,
             "away_team": away_team,
             "moneyline": {
-                "home_consensus": int(avg(summary["moneyline"]["home"])) if summary["moneyline"]["home"] else 0,
-                "away_consensus": int(avg(summary["moneyline"]["away"])) if summary["moneyline"]["away"] else 0,
+                "home_consensus": int(avg(summary["moneyline"]["home"])),
+                "away_consensus": int(avg(summary["moneyline"]["away"])),
                 "home_best": best(summary["moneyline"]["home"]),
                 "away_best": best(summary["moneyline"]["away"]),
             },
@@ -204,95 +197,25 @@ class AIDecisionEngine:
             "bookmaker_count": len(event_odds.get("bookmakers", []))
         }
     
-    # ==================== Free Research ====================
-    
-    def get_team_research(self, sport_key: str, home_team: str, away_team: str) -> str:
+    def get_free_research(self, sport_key: str, home_team: str, away_team: str) -> str:
         """
-        Get FREE team research from ESPN.
-        Falls back gracefully if unavailable.
+        Get research from FREE ESPN API instead of Perplexity.
+        Returns a concise formatted string for the AI prompt.
         """
         try:
             matchup = self.free_data.get_matchup_summary(sport_key, home_team, away_team)
-            
-            # Check if we got useful data
-            home_data = matchup.get("home_team") or {}
-            away_data = matchup.get("away_team") or {}
-            
-            if home_data.get("record") or away_data.get("record"):
-                return self.free_data.format_for_ai_prompt(matchup)
-            else:
-                logger.info(f"[ENGINE] ESPN data unavailable for {home_team} vs {away_team}")
-                return self._basic_context(home_team, away_team)
-                
+            return self.free_data.format_for_ai_prompt(matchup)
         except Exception as e:
-            logger.warning(f"[ENGINE] Research fetch failed: {e}")
-            return self._basic_context(home_team, away_team)
+            logger.warning(f"Free data fetch failed: {e}")
+            return f"Research unavailable. Analyzing {away_team} @ {home_team} based on odds only."
     
-    def _basic_context(self, home_team: str, away_team: str) -> str:
-        """Generate basic context when ESPN is unavailable."""
-        return f"""=== {away_team} @ {home_team} ===
-
-Team research unavailable - analyzing based on odds only.
-
-Consider:
-- Home field advantage (~3 points in NFL)  
-- Line movement indicates sharp money
-- Look for value in line discrepancies"""
-    
-    # ==================== AI Decision ====================
-    
-    def _build_prompt(self, odds: Dict, research: str) -> str:
-        """Build concise prompt for AI."""
-        home_ml = odds['moneyline']['home_consensus']
-        away_ml = odds['moneyline']['away_consensus']
+    def generate_decision(self, event_odds: Dict, sport_key: str, 
+                          include_research: bool = True) -> BetDecision:
+        """
+        Generate a betting decision using free data + cheap AI.
         
-        # Determine favorite
-        if home_ml != 0 and away_ml != 0:
-            if home_ml < away_ml:
-                favorite = f"{odds['home_team']} (home)"
-                fav_ml = home_ml
-            else:
-                favorite = f"{odds['away_team']} (away)"
-                fav_ml = away_ml
-        else:
-            favorite = "Unknown"
-            fav_ml = 0
-        
-        spread_line = odds['spread']['home_line'] if odds['spread']['home_line'] else 0
-        total_line = odds['total']['line'] if odds['total']['line'] else 0
-        
-        prompt = f"""Analyze this betting opportunity:
-
-MATCHUP: {odds['away_team']} @ {odds['home_team']}
-
-ODDS:
-- Favorite: {favorite} ({fav_ml})
-- Spread: {odds['home_team']} {spread_line:+.1f}
-- Total: {total_line}
-- Books surveyed: {odds['bookmaker_count']}
-
-{research}
-
-Respond in JSON format:
-{{
-  "decision": "place_bet" or "skip",
-  "bet_type": "moneyline" or "spread" or "total",
-  "bet_side": "home" or "away" or "over" or "under",
-  "confidence": 0.0 to 1.0,
-  "expected_value": decimal like 0.05 for 5%,
-  "win_probability": 0.0 to 1.0,
-  "reasoning": "brief explanation",
-  "key_insights": ["insight1"],
-  "risk_factors": ["risk1"]
-}}
-
-Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "skip"."""
-        
-        return prompt
-    
-    def analyze_event(self, event_odds: Dict, sport_key: str,
-                      include_research: bool = True) -> BetDecision:
-        """Analyze a single event and return decision."""
+        Total cost: ~$0.002 per event
+        """
         start_time = time.time()
         
         event_id = event_odds.get("id", "unknown")
@@ -300,38 +223,40 @@ Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "sk
         away_team = event_odds.get("away_team", "")
         commence_time = event_odds.get("commence_time", "")
         
-        logger.info(f"[ENGINE] Analyzing: {away_team} @ {home_team}")
+        logger.info(f"[BUDGET] Analyzing: {away_team} @ {home_team}")
         
-        # Step 1: Summarize odds
+        # Step 1: Summarize odds (not full dump)
         odds_summary = self.summarize_odds(event_odds)
         
-        # Step 2: Get free research (ESPN)
-        research = ""
+        # Step 2: Get FREE research
+        research_text = ""
         if include_research:
-            research = self.get_team_research(sport_key, home_team, away_team)
+            research_text = self.get_free_research(sport_key, home_team, away_team)
         
-        # Step 3: Build prompt and call AI
-        prompt = self._build_prompt(odds_summary, research)
+        # Step 3: Build CONCISE prompt (key to saving tokens!)
+        prompt = self._build_concise_prompt(odds_summary, research_text)
         
-        logger.info(f"[ENGINE] Calling AI model: {self.model}")
+        # Step 4: Call cheap AI model
+        logger.info(f"[BUDGET] Calling {self.model}...")
         
         try:
-            response = self.ai_client.get_json_response(
+            response = self.ai.get_json_response(
                 prompt=prompt,
                 model=self.model,
-                system_prompt="You are a sports betting analyst. Respond only with valid JSON."
+                system_prompt="""You are a sports betting analyst. Analyze the data and respond with a JSON betting decision.
+Be concise. Only recommend bets with clear edge (>5% expected value)."""
             )
             
             if "error" in response:
-                logger.error(f"[ENGINE] AI error: {response['error']}")
-                response = {"decision": "skip", "reasoning": f"AI error: {response['error']}"}
-                
+                logger.error(f"AI error: {response['error']}")
+                response = {"decision": "skip", "reasoning": "AI analysis failed"}
+        
         except Exception as e:
-            logger.error(f"[ENGINE] AI call failed: {e}")
+            logger.error(f"AI call failed: {e}")
             response = {"decision": "skip", "reasoning": str(e)}
         
-        elapsed = int((time.time() - start_time) * 1000)
-        logger.info(f"[ENGINE] Complete in {elapsed}ms - Decision: {response.get('decision', 'skip')}")
+        execution_time = int((time.time() - start_time) * 1000)
+        logger.info(f"[BUDGET] Complete in {execution_time}ms - Decision: {response.get('decision', 'skip')}")
         
         # Build decision object
         decision = BetDecision(
@@ -352,81 +277,146 @@ Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "sk
             key_insights=response.get("key_insights", []),
             risk_factors=response.get("risk_factors", []),
             odds_snapshot=odds_summary,
-            research_summary={"source": "espn_free", "text": research[:300] if research else ""},
+            research_summary={"text": research_text[:500]},  # Truncate for storage
             model_used=self.model
         )
         
         return decision
+    
+    def _build_concise_prompt(self, odds: Dict, research: str) -> str:
+        """
+        Build a SHORT prompt to minimize tokens.
+        Target: <1000 tokens input
+        """
+        prompt = f"""Analyze this betting opportunity:
+
+ODDS:
+- Moneyline: {odds['home_team']} {odds['moneyline']['home_consensus']}, {odds['away_team']} {odds['moneyline']['away_consensus']}
+- Spread: {odds['home_team']} {odds['spread']['home_line']} ({odds['spread']['home_odds']}), {odds['away_team']} {odds['spread']['away_line']} ({odds['spread']['away_odds']})
+- Total: {odds['total']['line']} (O {odds['total']['over_odds']} / U {odds['total']['under_odds']})
+- Sources: {odds['bookmaker_count']} bookmakers
+
+{research if research else 'No additional research available.'}
+
+Respond in JSON:
+{{
+  "decision": "place_bet" or "skip",
+  "bet_type": "moneyline", "spread", or "total" (if betting),
+  "bet_side": "home", "away", "over", or "under" (if betting),
+  "confidence": 0.0-1.0,
+  "expected_value": percentage as decimal (e.g., 0.05 for 5%),
+  "win_probability": 0.0-1.0,
+  "reasoning": "brief explanation",
+  "key_insights": ["insight1", "insight2"],
+  "risk_factors": ["risk1", "risk2"]
+}}
+
+Only recommend bets with confidence >0.6 and expected_value >0.03."""
+        
+        return prompt
     
     def scan_sport(self, sport_key: str, max_events: int = 10,
                    include_research: bool = True,
                    on_decision: Callable = None) -> List[BetDecision]:
         """
         Scan a sport for betting opportunities.
-        
-        Args:
-            sport_key: Sport to scan (e.g., 'americanfootball_nfl')
-            max_events: Max events to analyze
-            include_research: Include ESPN research
-            on_decision: Callback for each decision (real-time updates)
         """
-        logger.info(f"[SCAN] Starting: {sport_key}, max_events={max_events}")
+        logger.info(f"[BUDGET-SCAN] Starting: {sport_key}, max_events={max_events}")
         
         callback = on_decision or self._on_decision_callback
         
-        # Get odds from The Odds API
-        odds_data = self.get_odds_for_sport(sport_key)
-        logger.info(f"[SCAN] Got {len(odds_data)} events from Odds API")
+        # Get odds
+        odds_data = self.odds.get_odds(
+            sport=sport_key,
+            regions="us",
+            markets="h2h,spreads,totals",
+            odds_format="american"
+        )
+        
+        logger.info(f"[BUDGET-SCAN] Got {len(odds_data)} events")
         
         decisions = []
-        events_to_process = odds_data[:max_events]
         
-        for idx, event in enumerate(events_to_process):
-            logger.info(f"[SCAN] Event {idx + 1}/{len(events_to_process)}")
+        for idx, event in enumerate(odds_data[:max_events]):
+            logger.info(f"[BUDGET-SCAN] Event {idx + 1}/{min(len(odds_data), max_events)}")
             
             try:
-                decision = self.analyze_event(
+                decision = self.generate_decision(
                     event_odds=event,
                     sport_key=sport_key,
                     include_research=include_research
                 )
                 decisions.append(decision)
                 
-                # Real-time callback
                 if callback:
                     try:
                         callback(decision)
                     except Exception as e:
-                        logger.error(f"[SCAN] Callback error: {e}")
+                        logger.error(f"Callback error: {e}")
                 
-                # Rate limiting
-                if idx < len(events_to_process) - 1:
-                    time.sleep(0.5)
-                    
+                # Small delay for rate limiting
+                time.sleep(0.5)
+                
             except Exception as e:
-                logger.error(f"[SCAN] Error analyzing event: {e}")
+                logger.error(f"Error analyzing event: {e}")
                 continue
         
-        logger.info(f"[SCAN] Complete: {len(decisions)} decisions")
+        logger.info(f"[BUDGET-SCAN] Complete: {len(decisions)} decisions")
         return decisions
     
-    def get_recommendations(self, decisions: List[BetDecision],
-                           min_confidence: float = None) -> List[BetDecision]:
+    def get_recommendations(self, decisions: List[BetDecision]) -> List[BetDecision]:
         """Filter to only recommended bets."""
-        min_conf = min_confidence or self.min_confidence
         return [
             d for d in decisions
             if d.decision == "place_bet"
-            and d.confidence >= min_conf
+            and d.confidence >= self.min_confidence
             and d.expected_value > 0
         ]
     
     def get_decision_logs(self, limit: int = 100) -> List[Dict]:
-        """Get recent decision logs."""
         return self.decision_logs[-limit:]
 
 
-# Convenience function
-def get_engine() -> AIDecisionEngine:
-    """Get configured decision engine."""
-    return AIDecisionEngine()
+# For backwards compatibility - use budget engine as default
+AIDecisionEngine = BudgetDecisionEngine
+
+
+def get_engine() -> BudgetDecisionEngine:
+    """Get a budget decision engine."""
+    return BudgetDecisionEngine()
+
+
+# Quick test
+if __name__ == "__main__":
+    engine = BudgetDecisionEngine()
+    
+    # Test with mock odds
+    mock_event = {
+        "id": "test123",
+        "home_team": "Kansas City Chiefs",
+        "away_team": "Buffalo Bills",
+        "commence_time": "2024-01-21T18:30:00Z",
+        "bookmakers": [
+            {
+                "key": "draftkings",
+                "markets": [
+                    {"key": "h2h", "outcomes": [
+                        {"name": "Kansas City Chiefs", "price": -150},
+                        {"name": "Buffalo Bills", "price": 130}
+                    ]},
+                    {"key": "spreads", "outcomes": [
+                        {"name": "Kansas City Chiefs", "price": -110, "point": -3.5},
+                        {"name": "Buffalo Bills", "price": -110, "point": 3.5}
+                    ]},
+                    {"key": "totals", "outcomes": [
+                        {"name": "Over", "price": -110, "point": 47.5},
+                        {"name": "Under", "price": -110, "point": 47.5}
+                    ]}
+                ]
+            }
+        ]
+    }
+    
+    print("Testing odds summary...")
+    summary = engine.summarize_odds(mock_event)
+    print(json.dumps(summary, indent=2))
