@@ -5,7 +5,7 @@ Aggregates data from FREE public APIs:
 - ESPN API (unofficial) - scores, standings, news, injuries, team stats
 - Other free sources as needed
 
-This replaces expensive Perplexity calls for basic sports research.
+This replaces expensive paid research APIs for basic sports research.
 """
 import os
 import time
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class FreeSportsDataClient:
     """
     Client for free sports data APIs.
-    Replaces Perplexity for basic team/injury/news research.
+    Replaces paid research APIs for basic team/injury/news research.
     """
     
     # ESPN API base URLs (unofficial but publicly accessible)
@@ -411,7 +411,7 @@ class FreeSportsDataClient:
     def get_team_summary(self, sport_key: str, team_name: str) -> Dict:
         """
         Get comprehensive team summary combining all data sources.
-        This replaces a Perplexity research call.
+        This replaces a paid research API call.
         """
         summary = {
             "team_name": team_name,
@@ -445,7 +445,7 @@ class FreeSportsDataClient:
     def get_matchup_summary(self, sport_key: str, home_team: str, away_team: str) -> Dict:
         """
         Get comprehensive matchup summary.
-        This replaces multiple Perplexity research calls.
+        This replaces multiple paid research API calls.
         """
         home_summary = self.get_team_summary(sport_key, home_team)
         away_summary = self.get_team_summary(sport_key, away_team)
@@ -487,7 +487,7 @@ class FreeSportsDataClient:
     def format_for_ai_prompt(self, matchup_summary: Dict) -> str:
         """
         Format matchup summary as a concise string for AI prompt.
-        Much shorter than raw Perplexity output!
+        Much shorter than typical paid research output!
         """
         if not matchup_summary:
             return "Research data unavailable."

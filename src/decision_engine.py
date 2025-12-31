@@ -1,15 +1,11 @@
 """
-AI Decision Engine (Simplified - No Perplexity)
+Heuristic Decision Engine (no external AI)
 
-Uses:
+Uses only free data sources:
 - The Odds API (free tier: 500 req/month) for betting lines
-- ESPN API (free) for team data when available  
-- OpenRouter (GPT-4o-mini) for decisions (~$0.01 per scan)
-
-NO Perplexity required!
+- ESPN API (free) for team data when available
 """
 import os
-import json
 import time
 import logging
 from datetime import datetime, timezone
@@ -85,16 +81,12 @@ class BetDecision:
 
 class AIDecisionEngine:
     """
-    Simplified decision engine - NO Perplexity!
-    
+    Simplified decision engine without any third-party AI models.
+
     Data sources:
     - The Odds API (free tier) for betting lines
     - ESPN API (free) for team stats/injuries
-    - OpenRouter (GPT-4o-mini) for AI decisions
     """
-    
-    # Cheap but effective model
-    DEFAULT_MODEL = "openai/gpt-4o-mini"
     
     SPORT_MAPPING = {
         "americanfootball_nfl": "NFL",
@@ -105,24 +97,22 @@ class AIDecisionEngine:
         "icehockey_nhl": "NHL",
     }
     
-    def __init__(self, model: str = None):
+    def __init__(self):
         # Import here to avoid circular imports
         from .sports_odds_client import SportsOddsClient
-        from .openrouter_client import OpenRouterClient
         from .free_sports_data import FreeSportsDataClient
-        
+
         self.odds_client = SportsOddsClient()
-        self.ai_client = OpenRouterClient()
         self.free_data = FreeSportsDataClient()
-        
-        self.model = model or os.getenv("AI_MODEL", self.DEFAULT_MODEL)
+
         self.min_confidence = float(os.getenv("MIN_CONFIDENCE", "0.6"))
-        
+        self.min_edge = float(os.getenv("MIN_EDGE", "0.03"))
+
         self._on_decision_callback: Optional[Callable] = None
         self.decision_logs = []
-        
-        logger.info(f"[ENGINE] Initialized with model: {self.model}")
-        logger.info(f"[ENGINE] NO Perplexity - using free data sources only")
+
+        logger.info("[ENGINE] Initialized with heuristic scoring (no external AI)")
+        logger.info("[ENGINE] Using free data sources only")
     
     def set_decision_callback(self, callback: Callable):
         """Set callback for real-time decision updates."""
@@ -239,56 +229,46 @@ Consider:
 - Line movement indicates sharp money
 - Look for value in line discrepancies"""
     
-    # ==================== AI Decision ====================
-    
-    def _build_prompt(self, odds: Dict, research: str) -> str:
-        """Build concise prompt for AI."""
-        home_ml = odds['moneyline']['home_consensus']
-        away_ml = odds['moneyline']['away_consensus']
-        
-        # Determine favorite
-        if home_ml != 0 and away_ml != 0:
-            if home_ml < away_ml:
-                favorite = f"{odds['home_team']} (home)"
-                fav_ml = home_ml
-            else:
-                favorite = f"{odds['away_team']} (away)"
-                fav_ml = away_ml
-        else:
-            favorite = "Unknown"
-            fav_ml = 0
-        
-        spread_line = odds['spread']['home_line'] if odds['spread']['home_line'] else 0
-        total_line = odds['total']['line'] if odds['total']['line'] else 0
-        
-        prompt = f"""Analyze this betting opportunity:
+    # ==================== Heuristic Decision ====================
 
-MATCHUP: {odds['away_team']} @ {odds['home_team']}
+    @staticmethod
+    def _implied_probability(american_odds: float) -> float:
+        """Convert American odds to implied probability."""
+        if not american_odds:
+            return 0.0
+        if american_odds > 0:
+            return 100 / (american_odds + 100)
+        return -american_odds / (-american_odds + 100)
 
-ODDS:
-- Favorite: {favorite} ({fav_ml})
-- Spread: {odds['home_team']} {spread_line:+.1f}
-- Total: {total_line}
-- Books surveyed: {odds['bookmaker_count']}
+    def _evaluate_moneyline_edge(self, odds: Dict) -> Dict:
+        """Evaluate moneyline edges using consensus vs best prices."""
+        home_consensus = odds["moneyline"].get("home_consensus") or 0
+        away_consensus = odds["moneyline"].get("away_consensus") or 0
+        home_best = odds["moneyline"].get("home_best") or 0
+        away_best = odds["moneyline"].get("away_best") or 0
 
-{research}
+        edges = {}
+        for side, best, consensus in [
+            ("home", home_best, home_consensus),
+            ("away", away_best, away_consensus),
+        ]:
+            if best == 0 or consensus == 0:
+                edges[side] = {"edge": 0.0, "implied_prob": 0.0}
+                continue
 
-Respond in JSON format:
-{{
-  "decision": "place_bet" or "skip",
-  "bet_type": "moneyline" or "spread" or "total",
-  "bet_side": "home" or "away" or "over" or "under",
-  "confidence": 0.0 to 1.0,
-  "expected_value": decimal like 0.05 for 5%,
-  "win_probability": 0.0 to 1.0,
-  "reasoning": "brief explanation",
-  "key_insights": ["insight1"],
-  "risk_factors": ["risk1"]
-}}
+            consensus_prob = self._implied_probability(consensus)
+            best_prob = self._implied_probability(best)
+            edge = consensus_prob - best_prob
+            edges[side] = {"edge": edge, "implied_prob": best_prob}
 
-Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "skip"."""
-        
-        return prompt
+        best_side = max(edges.items(), key=lambda item: item[1]["edge"])
+        selected_side, metrics = best_side
+
+        return {
+            "side": selected_side,
+            "edge": metrics["edge"],
+            "win_probability": max(0.0, min(1.0, 1 - metrics["implied_prob"] if metrics["implied_prob"] else 0)),
+        }
     
     def analyze_event(self, event_odds: Dict, sport_key: str,
                       include_research: bool = True) -> BetDecision:
@@ -309,31 +289,43 @@ Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "sk
         research = ""
         if include_research:
             research = self.get_team_research(sport_key, home_team, away_team)
-        
-        # Step 3: Build prompt and call AI
-        prompt = self._build_prompt(odds_summary, research)
-        
-        logger.info(f"[ENGINE] Calling AI model: {self.model}")
-        
-        try:
-            response = self.ai_client.get_json_response(
-                prompt=prompt,
-                model=self.model,
-                system_prompt="You are a sports betting analyst. Respond only with valid JSON."
+
+        # Step 3: Heuristic scoring instead of external AI
+        moneyline_eval = self._evaluate_moneyline_edge(odds_summary)
+        edge = moneyline_eval.get("edge", 0.0)
+        bookmaker_count = odds_summary.get("bookmaker_count", 0)
+
+        decision_flag = "skip"
+        bet_type = None
+        bet_side = None
+        confidence = 0.0
+        expected_value = 0.0
+        win_probability = 0.0
+        reasoning_parts = []
+
+        if bookmaker_count == 0:
+            reasoning_parts.append("No bookmaker data available.")
+        elif edge >= self.min_edge:
+            decision_flag = "place_bet"
+            bet_type = "moneyline"
+            bet_side = moneyline_eval["side"]
+            expected_value = edge
+            win_probability = moneyline_eval.get("win_probability", 0.0)
+            confidence = min(1.0, max(self.min_confidence, edge * 10 + bookmaker_count * 0.02))
+            reasoning_parts.append(
+                f"{bet_side.title()} side offers a value edge of {edge:.2%} versus consensus pricing."
             )
-            
-            if "error" in response:
-                logger.error(f"[ENGINE] AI error: {response['error']}")
-                response = {"decision": "skip", "reasoning": f"AI error: {response['error']}"}
-                
-        except Exception as e:
-            logger.error(f"[ENGINE] AI call failed: {e}")
-            response = {"decision": "skip", "reasoning": str(e)}
-        
+        else:
+            reasoning_parts.append(
+                f"Edge {edge:.2%} below threshold of {self.min_edge:.0%}; skipping."
+            )
+
+        if research:
+            reasoning_parts.append("ESPN research added for context.")
+
         elapsed = int((time.time() - start_time) * 1000)
-        logger.info(f"[ENGINE] Complete in {elapsed}ms - Decision: {response.get('decision', 'skip')}")
-        
-        # Build decision object
+        logger.info(f"[ENGINE] Complete in {elapsed}ms - Decision: {decision_flag}")
+
         decision = BetDecision(
             event_id=event_id,
             event_name=f"{away_team} @ {home_team}",
@@ -341,21 +333,21 @@ Only bet if confidence > 0.6 AND expected_value > 0.03. Most games should be "sk
             home_team=home_team,
             away_team=away_team,
             commence_time=commence_time,
-            decision=response.get("decision", "skip"),
-            bet_type=response.get("bet_type"),
-            bet_side=response.get("bet_side"),
-            bet_amount_usd=response.get("bet_amount_usd"),
-            confidence=response.get("confidence", 0),
-            expected_value=response.get("expected_value", 0),
-            win_probability=response.get("win_probability", 0),
-            reasoning=response.get("reasoning", ""),
-            key_insights=response.get("key_insights", []),
-            risk_factors=response.get("risk_factors", []),
+            decision=decision_flag,
+            bet_type=bet_type,
+            bet_side=bet_side,
+            bet_amount_usd=None,
+            confidence=confidence,
+            expected_value=expected_value,
+            win_probability=win_probability,
+            reasoning=" ".join(reasoning_parts),
+            key_insights=[],
+            risk_factors=[],
             odds_snapshot=odds_summary,
             research_summary={"source": "espn_free", "text": research[:300] if research else ""},
-            model_used=self.model
+            model_used="heuristic"
         )
-        
+
         return decision
     
     def scan_sport(self, sport_key: str, max_events: int = 10,

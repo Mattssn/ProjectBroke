@@ -1,12 +1,10 @@
 """
-Kalshi Sports Betting Dashboard - Simplified (No Perplexity)
+Kalshi Sports Betting Dashboard - Simplified (no external AI)
 
 Clean, budget-friendly version:
 - The Odds API (free tier: 500 req/month)
 - ESPN API (free) for team data
-- OpenRouter GPT-4o-mini (~$0.01/scan)
-
-NO PERPLEXITY REQUIRED!
+- Heuristic scoring only (no paid AI services)
 """
 import os
 import json
@@ -23,7 +21,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.kalshi_client import KalshiClient
 from src.sports_odds_client import SportsOddsClient
-from src.openrouter_client import OpenRouterClient
 from src.decision_engine import AIDecisionEngine, BetDecision
 
 
@@ -57,7 +54,6 @@ bot_config = {
     "use_research": True,  # ESPN research (free)
     "max_daily_trades": 10,
     "max_daily_loss": 100.0,
-    "ai_model": os.getenv("AI_MODEL", "openai/gpt-4o-mini"),
 }
 
 # Trading stats
@@ -97,12 +93,11 @@ def init_clients():
     
     kalshi_client = KalshiClient()
     odds_client = SportsOddsClient()
-    decision_engine = AIDecisionEngine(model=bot_config.get("ai_model"))
-    
+    decision_engine = AIDecisionEngine()
+
     print("[INIT] Clients initialized")
-    print(f"[INIT] AI Model: {bot_config.get('ai_model')}")
     print("[INIT] Data sources: Odds API (free tier) + ESPN (free)")
-    print("[INIT] NO Perplexity required!")
+    print("[INIT] No external AI providers in use")
 
 
 def add_debug_log(level: str, component: str, message: str):
@@ -329,8 +324,6 @@ def bot_configuration():
     if "auto_execute" in data:
         bot_config["auto_execute"] = bool(data["auto_execute"])
     
-    if "ai_model" in data:
-        bot_config["ai_model"] = data["ai_model"]
     
     if "scan_interval" in data:
         bot_state["scan_interval"] = int(data["scan_interval"])
@@ -528,9 +521,7 @@ def health_check():
         "status": "healthy",
         "bot_running": bot_state["running"],
         "decisions_cached": decision_count,
-        "ai_model": bot_config.get("ai_model"),
-        "data_sources": ["odds_api", "espn_free"],
-        "perplexity": "NOT USED"
+        "data_sources": ["odds_api", "espn_free"]
     })
 
 
@@ -569,11 +560,10 @@ if __name__ == '__main__':
     app = create_app()
     port = int(os.getenv('PORT', 5000))
     print(f"\n{'='*50}")
-    print("KALSHI SPORTS BOT - NO PERPLEXITY VERSION")
+    print("KALSHI SPORTS BOT - HEURISTIC VERSION")
     print(f"{'='*50}")
     print(f"Dashboard: http://localhost:{port}")
-    print(f"AI Model: {bot_config.get('ai_model')}")
     print("Data: Odds API (free) + ESPN (free)")
-    print("Perplexity: NOT REQUIRED!")
+    print("External AI Providers: REMOVED")
     print(f"{'='*50}\n")
     app.run(host='0.0.0.0', port=port, debug=False)

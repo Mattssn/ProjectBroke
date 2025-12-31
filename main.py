@@ -2,17 +2,15 @@
 """
 Kalshi Sports Betting Bot
 
-An AI-powered trading system for Kalshi prediction markets with:
+A lightweight trading helper for Kalshi prediction markets with:
 - Sports odds integration from The Odds API
-- Research capabilities via Perplexity AI
-- Multi-model decision making via OpenRouter
+- Heuristic decision making (no external AI)
 - Real-time web dashboard for monitoring
 
 Usage:
     python main.py              # Interactive menu
     python main.py dashboard    # Launch web dashboard
     python main.py scan NFL     # Scan specific sport
-    python main.py research "Lakers vs Celtics"  # Research matchup
 
 Author: Built with AI assistance
 License: MIT
@@ -32,12 +30,11 @@ def print_banner():
     banner = """
 ╔═══════════════════════════════════════════════════════════════╗
 ║           KALSHI SPORTS BETTING BOT                           ║
-║       AI-Powered Prediction Market Trading                    ║
+║        Heuristic Prediction Market Trading                    ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║  Features:                                                    ║
 ║  • Sports Odds Integration (The Odds API)                     ║
-║  • AI Research (Perplexity)                                   ║
-║  • Multi-Model Decisions (OpenRouter)                         ║
+║  • Free ESPN Context                                          ║
 ║  • Real-Time Dashboard                                        ║
 ╚═══════════════════════════════════════════════════════════════╝
 """
@@ -49,8 +46,6 @@ def check_api_keys():
     keys = {
         "KALSHI_API_KEY": os.getenv("KALSHI_API_KEY"),
         "ODDS_API_KEY": os.getenv("ODDS_API_KEY"),
-        "PERPLEXITY_API_KEY": os.getenv("PERPLEXITY_API_KEY"),
-        "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY"),
     }
     
     missing = []
@@ -123,33 +118,6 @@ def scan_sport(sport_key: str, max_events: int = 5, include_research: bool = Tru
     return decisions
 
 
-def research_matchup(query: str):
-    """Research a specific matchup."""
-    print(f"\n🔬 Researching: {query}")
-    
-    from src.perplexity_client import PerplexityClient
-    
-    client = PerplexityClient()
-    
-    # Parse query to extract teams
-    parts = query.lower().replace(" vs ", " vs. ").replace(" at ", " @ ").split()
-    
-    result = client.ask(
-        question=f"Provide a betting analysis for: {query}. Include recent performance, injuries, and betting trends.",
-        model="sonar-pro"
-    )
-    
-    print(f"\n📝 Research Results:")
-    print("-" * 60)
-    print(result.get("answer", "No results found."))
-    print("-" * 60)
-    
-    if result.get("citations"):
-        print(f"\n📚 Sources ({len(result['citations'])} citations)")
-    
-    return result
-
-
 def get_portfolio():
     """Display current portfolio status."""
     print("\n💼 Fetching Portfolio Status...")
@@ -185,10 +153,9 @@ def interactive_menu():
         print("=" * 50)
         print("   1. 🖥️  Launch Web Dashboard")
         print("   2. 🔍 Scan Sport for Opportunities")
-        print("   3. 🔬 Research a Matchup")
-        print("   4. 💼 View Portfolio")
-        print("   5. 📊 Check API Status")
-        print("   6. ❌ Exit")
+        print("   3. 💼 View Portfolio")
+        print("   4. 📊 Check API Status")
+        print("   5. ❌ Exit")
         print("=" * 50)
         
         try:
@@ -211,18 +178,14 @@ def interactive_menu():
                     max_events = int(max_events) if max_events else 5
                     scan_sport(sport, max_events)
             elif choice == "3":
-                query = input("\nEnter matchup (e.g., 'Lakers vs Celtics'): ").strip()
-                if query:
-                    research_matchup(query)
-            elif choice == "4":
                 get_portfolio()
-            elif choice == "5":
+            elif choice == "4":
                 check_api_keys()
-            elif choice == "6":
+            elif choice == "5":
                 print("\nGoodbye! 👋")
                 break
             else:
-                print("\n⚠️  Invalid choice. Please enter 1-6.")
+                print("\n⚠️  Invalid choice. Please enter 1-5.")
         
         except KeyboardInterrupt:
             print("\n\nExiting...")
@@ -236,7 +199,7 @@ def main():
     print_banner()
     
     parser = argparse.ArgumentParser(
-        description="Kalshi Sports Betting Bot - AI-Powered Trading",
+        description="Kalshi Sports Betting Bot - Heuristic Trading",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
@@ -250,10 +213,6 @@ def main():
     scan_parser.add_argument("sport", help="Sport key (e.g., americanfootball_nfl)")
     scan_parser.add_argument("--max", type=int, default=5, help="Max events to analyze")
     scan_parser.add_argument("--no-research", action="store_true", help="Skip research step")
-    
-    # Research command
-    research_parser = subparsers.add_parser("research", help="Research a matchup")
-    research_parser.add_argument("query", help="Matchup to research")
     
     # Portfolio command
     portfolio_parser = subparsers.add_parser("portfolio", help="View portfolio status")
@@ -269,8 +228,6 @@ def main():
     elif args.command == "scan":
         check_api_keys()
         scan_sport(args.sport, args.max, not args.no_research)
-    elif args.command == "research":
-        research_matchup(args.query)
     elif args.command == "portfolio":
         get_portfolio()
     elif args.command == "status":
